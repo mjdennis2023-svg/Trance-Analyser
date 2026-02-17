@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Harmonic Analyzer">
+    <title>Harmonic Analyzer Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #12182b;
+            --bg-tertiary: #1a2235;
+            --accent-primary: #00f0ff;
+            --accent-secondary: #ff00ea;
+            --accent-tertiary: #00ff88;
+            --text-primary: #ffffff;
+            --text-secondary: #8b95b8;
+            --text-muted: #4a5578;
+            --surface: rgba(26, 34, 53, 0.6);
+            --surface-elevated: rgba(26, 34, 53, 0.9);
+            --glow-cyan: rgba(0, 240, 255, 0.3);
+            --glow-magenta: rgba(255, 0, 234, 0.3);
+        }
+
+```
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+        font-family: 'JetBrains Mono', monospace;
+        background: var(--bg-primary);
+        min-height: 100vh;
+        color: var(--text-primary);
+        overflow-x: hidden;
+        position: relative;
+    }
+
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+            radial-gradient(circle at 20% 30%, var(--glow-cyan) 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, var(--glow-magenta) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.15;
+    }
+
+    .grain {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0.03;
+        pointer-events: none;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        z-index: 1;
+    }
+
+    .container {
+        position: relative;
+        z-index: 2;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 60px;
+        animation: slideDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .logo {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 48px;
+        font-weight: 900;
+        letter-spacing: -2px;
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        position: relative;
+        display: inline-block;
+    }
+
+    .logo::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+    }
+
+    .tagline {
+        font-size: 13px;
+        letter-spacing: 3px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        font-weight: 300;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface-elevated);
+        border: 1px solid rgba(0, 240, 255, 0.3);
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 11px;
+        margin-top: 16px;
+        color: var(--accent-primary);
+        font-weight: 500;
+        backdrop-filter: blur(10px);
+    }
+
+    .badge::before {
+        content: '●';
+        animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+
+    @media (max-width: 968px) {
+        .grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .card {
+        background: var(--surface);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 32px;
+        position: relative;
+        overflow: hidden;
+        animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    }
+
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+        opacity: 0.5;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .card:nth-child(1) { animation-delay: 0.1s; }
+    .card:nth-child(2) { animation-delay: 0.2s; }
+    .card:nth-child(3) { animation-delay: 0.3s; }
+
+    .card-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 24px;
+        color: var(--text-primary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .control-panel {
+        text-align: center;
+    }
+
+    .btn {
+        font-family: 'JetBrains Mono', monospace;
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        color: var(--bg-primary);
+        border: none;
+        padding: 20px 48px;
+        font-size: 15px;
+        font-weight: 700;
+        border-radius: 50px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 10px 40px rgba(0, 240, 255, 0.3);
+        position: relative;
+        overflow: hidden;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .btn::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .btn:hover::before {
+        opacity: 1;
+    }
+
+    .btn span {
+        position: relative;
+        z-index: 1;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 50px rgba(0, 240, 255, 0.5);
+    }
+
+    .btn:active {
+        transform: translateY(0);
+    }
+
+    .btn.stop {
+        background: linear-gradient(135deg, #ff0055, #ff4488);
+        box-shadow: 0 10px 40px rgba(255, 0, 85, 0.3);
+    }
+
+    .btn.stop::before {
+        background: linear-gradient(135deg, #ff4488, #ff0055);
+    }
+
+    .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .recording-status {
+        margin-top: 24px;
+        padding: 20px;
+        background: rgba(0, 240, 255, 0.05);
+        border: 1px solid rgba(0, 240, 255, 0.2);
+        border-radius: 16px;
+        display: none;
+    }
+
+    .recording-status.active {
+        display: block;
+        animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .rec-indicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .rec-dot {
+        width: 12px;
+        height: 12px;
+        background: #ff0055;
+        border-radius: 50%;
+        box-shadow: 0 0 20px rgba(255, 0, 85, 0.8);
+        animation: pulse-rec 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse-rec {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.3); opacity: 0.7; }
+    }
+
+    .rec-time {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--accent-primary);
+    }
+
+    .rec-hint {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .analyzing {
+        text-align: center;
+        padding: 40px;
+        display: none;
+    }
+
+    .analyzing.active {
+        display: block;
+    }
+
+    .spinner {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 24px;
+        border: 3px solid rgba(0, 240, 255, 0.1);
+        border-top: 3px solid var(--accent-primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .analyzing-text {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 16px;
+        color: var(--accent-primary);
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .analyzing-step {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .results {
+        display: none;
+    }
+
+    .results.active {
+        display: block;
+    }
+
+    .metrics {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+
+    .metric {
+        background: var(--bg-secondary);
+        border: 1px solid rgba(0, 240, 255, 0.1);
+        border-radius: 20px;
+        padding: 28px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .metric:hover {
+        border-color: rgba(0, 240, 255, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .metric::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100px;
+        height: 100px;
+        background: radial-gradient(circle, var(--glow-cyan) 0%, transparent 70%);
+        opacity: 0.1;
+        pointer-events: none;
+    }
+
+    .metric-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--text-muted);
+        margin-bottom: 12px;
+        font-weight: 500;
+    }
+
+    .metric-value {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 48px;
+        font-weight: 900;
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-tertiary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .metric-sub {
+        font-size: 11px;
+        color: var(--text-secondary);
+        min-height: 16px;
+    }
+
+    .confidence-bar {
+        margin-top: 16px;
+        height: 4px;
+        background: rgba(0, 240, 255, 0.1);
+        border-radius: 2px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .confidence-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent-primary), var(--accent-tertiary));
+        border-radius: 2px;
+        transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 0 10px var(--accent-primary);
+    }
+
+    .confidence-text {
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .camelot-section {
+        margin: 32px 0;
+    }
+
+    .camelot-title {
+        text-align: center;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--text-secondary);
+        margin-bottom: 24px;
+    }
+
+    .wheel-container {
+        position: relative;
+        width: 320px;
+        height: 320px;
+        margin: 0 auto;
+    }
+
+    .wheel-svg {
+        width: 100%;
+        height: 100%;
+        filter: drop-shadow(0 10px 40px rgba(0, 240, 255, 0.2));
+    }
+
+    .current-position {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        color: var(--bg-primary);
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        box-shadow: 0 10px 40px rgba(0, 240, 255, 0.5);
+        border: 3px solid var(--bg-primary);
+    }
+
+    .position-code {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 32px;
+        font-weight: 900;
+    }
+
+    .position-key {
+        font-size: 12px;
+        opacity: 0.8;
+        margin-top: 4px;
+    }
+
+    .compatible-section {
+        margin: 32px 0;
+        padding: 24px;
+        background: var(--bg-secondary);
+        border: 1px solid rgba(0, 240, 255, 0.1);
+        border-radius: 20px;
+    }
+
+    .section-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .key-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .key-tag {
+        background: rgba(0, 240, 255, 0.1);
+        border: 1px solid rgba(0, 240, 255, 0.3);
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--accent-primary);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        cursor: default;
+    }
+
+    .key-tag:hover {
+        background: rgba(0, 240, 255, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .key-tag.perfect {
+        background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        color: var(--bg-primary);
+        border-color: transparent;
+        font-weight: 700;
+    }
+
+    .details-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        font-size: 12px;
+    }
+
+    .detail-label {
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 10px;
+    }
+
+    .detail-value {
+        color: var(--accent-primary);
+        font-weight: 500;
+    }
+
+    .audio-player {
+        width: 100%;
+        margin-top: 24px;
+        border-radius: 12px;
+        filter: saturate(0) brightness(0.8) contrast(1.2);
+    }
+
+    .debug-panel {
+        margin-top: 24px;
+        padding: 16px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(0, 240, 255, 0.1);
+        border-radius: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        color: var(--text-secondary);
+        max-height: 200px;
+        overflow-y: auto;
+        line-height: 1.6;
+        display: none;
+    }
+
+    .debug-panel.active {
+        display: block;
+    }
+
+    .error {
+        background: rgba(255, 0, 85, 0.1);
+        border: 1px solid rgba(255, 0, 85, 0.3);
+        color: #ff4488;
+        padding: 16px;
+        border-radius: 12px;
+        margin-top: 16px;
+        font-size: 13px;
+        display: none;
+    }
+
+    .error.active {
+        display: block;
+        animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @media (max-width: 768px) {
+        .logo {
+            font-size: 36px;
+        }
+
+        .metrics {
+            grid-template-columns: 1fr;
+        }
+
+        .details-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .wheel-container {
+            width: 280px;
+            height: 280px;
+        }
+    }
+
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: var(--bg-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: var(--accent-primary);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: var(--accent-secondary);
+    }
+</style>
+```
+
+</head>
+<body>
+    <div class="grain"></div>
+
+```
+<div class="container">
+    <header class="header">
+        <h1 class="logo">Harmonic</h1>
+        <p class="tagline">Professional Audio Analysis</p>
+        <span class="badge">Studio-Grade Detection Algorithms</span>
+    </header>
+
+    <div class="grid">
+        <div class="card control-panel">
+            <h2 class="card-title">Live Capture</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 24px; font-size: 13px;">
+                Play a track and analyze through your microphone
+            </p>
+
+            <div id="recordingControls">
+                <button class="btn" id="startBtn">
+                    <span>🎤</span>
+                    <span>Start Listening</span>
+                </button>
+                <button class="btn stop" id="stopBtn" style="display: none;">
+                    <span>⏹</span>
+                    <span>Stop & Analyze</span>
+                </button>
+            </div>
+
+            <div class="recording-status" id="recordingStatus">
+                <div class="rec-indicator">
+                    <div class="rec-dot"></div>
+                    <div class="rec-time" id="recordingTime">0:00</div>
+                </div>
+                <p class="rec-hint">Recording — 30s minimum for best accuracy</p>
+            </div>
+
+            <div class="analyzing" id="analyzing">
+                <div class="spinner"></div>
+                <p class="analyzing-text">Analyzing</p>
+                <p class="analyzing-step" id="analyzingStep">Processing audio...</p>
+            </div>
+
+            <div class="error" id="error"></div>
+        </div>
+
+        <div class="card results" id="resultsCard">
+            <h2 class="card-title">Detection Results</h2>
+            
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-label">BPM</div>
+                    <div class="metric-value" id="bpmValue">--</div>
+                    <div class="metric-sub" id="bpmCandidates"></div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="bpmConfidence" style="width: 0%"></div>
+                    </div>
+                    <div class="confidence-text" id="bpmConfidenceText"></div>
+                </div>
+                
+                <div class="metric">
+                    <div class="metric-label">Musical Key</div>
+                    <div class="metric-value" id="keyValue" style="font-size: 32px;">--</div>
+                    <div class="metric-sub" id="keyCandidates"></div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="keyConfidence" style="width: 0%"></div>
+                    </div>
+                    <div class="confidence-text" id="keyConfidenceText"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card results" id="results" style="animation-delay: 0.4s;">
+        <div class="camelot-section">
+            <h3 class="camelot-title">Camelot Wheel Position</h3>
+            <div class="wheel-container">
+                <svg class="wheel-svg" viewBox="0 0 300 300">
+                    <g id="outerRing"></g>
+                    <g id="innerRing"></g>
+                </svg>
+                <div class="current-position" id="currentPosition">
+                    <div class="position-code" id="positionCode">--</div>
+                    <div class="position-key" id="positionKey">--</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="compatible-section">
+            <h3 class="section-title">
+                <span>✨</span>
+                <span>Compatible Mixing Keys</span>
+            </h3>
+            <div class="key-tags" id="compatibleKeys"></div>
+        </div>
+
+        <div class="compatible-section">
+            <h3 class="section-title">
+                <span>📊</span>
+                <span>Analysis Details</span>
+            </h3>
+            <div class="details-grid">
+                <div class="detail-row">
+                    <span class="detail-label">Key Method</span>
+                    <span class="detail-value" id="keyMethod">--</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">BPM Method</span>
+                    <span class="detail-value" id="bpmMethod">--</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Camelot</span>
+                    <span class="detail-value" id="camelotDetail">--</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Duration</span>
+                    <span class="detail-value" id="durationAnalyzed">--</span>
+                </div>
+            </div>
+        </div>
+
+        <audio id="audioPlayer" class="audio-player" controls></audio>
+
+        <div class="debug-panel" id="debugInfo"></div>
+    </div>
+</div>
+
+<script>
+    // =====================================================================
+    // RADIX-2 COOLEY-TUKEY FFT — real implementation, O(N log N)
+    // =====================================================================
+    function fft(re, im) {
+        const N = re.length;
+        if (N <= 1) return;
+
+        // Bit-reversal permutation
+        let j = 0;
+        for (let i = 1; i < N; i++) {
+            let bit = N >> 1;
+            for (; j & bit; bit >>= 1) j ^= bit;
+            j ^= bit;
+            if (i < j) {
+                [re[i], re[j]] = [re[j], re[i]];
+                [im[i], im[j]] = [im[j], im[i]];
+            }
+        }
+
+        // Cooley-Tukey butterfly
+        for (let len = 2; len <= N; len <<= 1) {
+            const ang = -2 * Math.PI / len;
+            const wRe = Math.cos(ang);
+            const wIm = Math.sin(ang);
+            for (let i = 0; i < N; i += len) {
+                let curRe = 1, curIm = 0;
+                for (let k = 0; k < len / 2; k++) {
+                    const uRe = re[i + k];
+                    const uIm = im[i + k];
+                    const vRe = re[i + k + len / 2] * curRe - im[i + k + len / 2] * curIm;
+                    const vIm = re[i + k + len / 2] * curIm + im[i + k + len / 2] * curRe;
+                    re[i + k]           = uRe + vRe;
+                    im[i + k]           = uIm + vIm;
+                    re[i + k + len / 2] = uRe - vRe;
+                    im[i + k + len / 2] = uIm - vIm;
+                    const nextRe = curRe * wRe - curIm * wIm;
+                    curIm = curRe * wIm + curIm * wRe;
+                    curRe = nextRe;
+                }
+            }
+        }
+    }
+
+    // Compute magnitude spectrum from a real signal using radix-2 FFT
+    function getMagnitudeSpectrum(signal) {
+        const N = signal.length;
+        const re = new Float64Array(N);
+        const im = new Float64Array(N);
+        for (let i = 0; i < N; i++) re[i] = signal[i];
+        fft(re, im);
+        const mag = new Float64Array(N / 2);
+        for (let i = 0; i < N / 2; i++) {
+            mag[i] = Math.sqrt(re[i] * re[i] + im[i] * im[i]);
+        }
+        return mag;
+    }
+
+    // Hann window
+    function hannWindow(signal) {
+        const N = signal.length;
+        const out = new Float64Array(N);
+        for (let i = 0; i < N; i++) {
+            out[i] = signal[i] * 0.5 * (1 - Math.cos(2 * Math.PI * i / (N - 1)));
+        }
+        return out;
+    }
+
+    // Blackman-Harris window (lower sidelobes — better for key detection)
+    function blackmanHarrisWindow(signal) {
+        const N = signal.length;
+        const out = new Float64Array(N);
+        const a0 = 0.35875, a1 = 0.48829, a2 = 0.14128, a3 = 0.01168;
+        for (let i = 0; i < N; i++) {
+            out[i] = signal[i] * (
+                a0
+                - a1 * Math.cos(2 * Math.PI * i / (N - 1))
+                + a2 * Math.cos(4 * Math.PI * i / (N - 1))
+                - a3 * Math.cos(6 * Math.PI * i / (N - 1))
+            );
+        }
+        return out;
+    }
+
+    // Next power of 2
+    function nextPow2(n) {
+        let p = 1;
+        while (p < n) p <<= 1;
+        return p;
+    }
+
+    // =====================================================================
+    // AUDIO VALIDATION
+    // =====================================================================
+    function validateAudio(buffer) {
+        const data = buffer.getChannelData(0);
+        const duration = buffer.duration;
+
+        if (duration < 10) {
+            return { valid: false, reason: 'Recording too short — please record at least 15 seconds.' };
+        }
+
+        // RMS energy check
+        let sumSq = 0;
+        for (let i = 0; i < data.length; i++) sumSq += data[i] * data[i];
+        const rms = Math.sqrt(sumSq / data.length);
+        if (rms < 0.001) {
+            return { valid: false, reason: 'Audio signal too quiet — check your microphone volume.' };
+        }
+
+        // Clipping check
+        let clipped = 0;
+        for (let i = 0; i < data.length; i++) {
+            if (Math.abs(data[i]) >= 0.999) clipped++;
+        }
+        if (clipped / data.length > 0.01) {
+            return { valid: true, warning: 'Audio is clipping — results may be less accurate. Lower your speaker volume.' };
+        }
+
+        return { valid: true };
+    }
+
+    // =====================================================================
+    // PROFESSIONAL CAMELOT WHEEL MAPPING
+    // =====================================================================
+    const CAMELOT_WHEEL = {
+        'C major': '8B', 'Db major': '3B', 'D major': '10B', 'Eb major': '5B',
+        'E major': '12B', 'F major': '7B', 'F# major': '2B', 'Gb major': '2B',
+        'G major': '9B', 'Ab major': '4B', 'A major': '11B', 'Bb major': '6B', 'B major': '1B',
+        'C minor': '5A', 'C# minor': '12A', 'D minor': '7A', 'D# minor': '2A', 'Eb minor': '2A',
+        'E minor': '9A', 'F minor': '4A', 'F# minor': '11A', 'G minor': '6A',
+        'G# minor': '1A', 'Ab minor': '1A', 'A minor': '8A', 'A# minor': '3A', 'Bb minor': '3A', 'B minor': '10A'
+    };
+
+    const CAMELOT_TO_KEY = Object.fromEntries(
+        Object.entries(CAMELOT_WHEEL).map(([key, camelot]) => [camelot, key])
+    );
+
+    // Krumhansl-Schmuckler key profiles
+    const KEY_PROFILES = {
+        major: [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88],
+        minor: [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17]
+    };
+
+    const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const NOTE_NAMES_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+    let audioContext;
+    let mediaRecorder;
+    let audioChunks = [];
+    let recordingStartTime;
+    let recordingInterval;
+    let stream;
+    let debugLog = [];
+
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const recordingStatus = document.getElementById('recordingStatus');
+    const recordingTime = document.getElementById('recordingTime');
+
+    startBtn.addEventListener('click', startRecording);
+    stopBtn.addEventListener('click', stopRecording);
+
+    function log(msg) {
+        debugLog.push(msg);
+        console.log(msg);
+    }
+
+    async function startRecording() {
+        try {
+            debugLog = [];
+            hideError();
+            hideResults();
+            
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false,
+                    sampleRate: 44100
+                } 
+            });
+
+            audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+            
+            mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'audio/webm;codecs=opus',
+                audioBitsPerSecond: 128000
+            });
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                await processAudio(audioBlob);
+            };
+
+            mediaRecorder.start();
+            
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'inline-flex';
+            recordingStatus.classList.add('active');
+            
+            recordingStartTime = Date.now();
+            recordingInterval = setInterval(updateRecordingTime, 100);
+
+        } catch (error) {
+            showError('Microphone access denied. Please allow microphone access and try again.');
+            console.error('Error accessing microphone:', error);
+        }
+    }
+
+    function updateRecordingTime() {
+        const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        recordingTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            clearInterval(recordingInterval);
+            
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            
+            stopBtn.style.display = 'none';
+            startBtn.style.display = 'inline-flex';
+            recordingStatus.classList.remove('active');
+            showAnalyzing();
+        }
+    }
+
+    async function processAudio(blob) {
+        try {
+            updateAnalyzingStep('Decoding audio...');
+            const arrayBuffer = await blob.arrayBuffer();
+            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            
+            log(`Audio decoded: ${audioBuffer.duration.toFixed(2)}s, ${audioBuffer.sampleRate}Hz`);
+
+            // Validate before analysis
+            const validation = validateAudio(audioBuffer);
+            if (!validation.valid) {
+                showError(validation.reason);
+                hideAnalyzing();
+                return;
+            }
+            if (validation.warning) {
+                log(`WARNING: ${validation.warning}`);
+                showWarning(validation.warning);
+            }
+
+            updateAnalyzingStep('Detecting BPM (kick-drum focused, 128–160 BPM)...');
+            const bpmResult = await detectBPMPrecision(audioBuffer);
+            
+            updateAnalyzingStep('Building chromagram & detecting key...');
+            const keyResult = await detectKeyPrecision(audioBuffer);
+            
+            displayResults(bpmResult, keyResult, audioBuffer.duration);
+            
+            const audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.src = URL.createObjectURL(blob);
+            
+        } catch (error) {
+            showError('Error analyzing audio: ' + error.message);
+            console.error('Processing error:', error);
+        } finally {
+            hideAnalyzing();
+        }
+    }
+
+    function updateAnalyzingStep(text) {
+        document.getElementById('analyzingStep').textContent = text;
+    }
+
+    // =====================================================================
+    // TRANCE-OPTIMISED BPM DETECTION
+    // Kick-drum focused (40–100 Hz), constrained to 128–160 BPM,
+    // harmonic verification to prevent octave errors
+    // =====================================================================
+    async function detectBPMPrecision(buffer) {
+        const sampleRate = buffer.sampleRate;
+        const raw = buffer.getChannelData(0);
+
+        log('BPM: Extracting kick-drum sub-band (40-100 Hz)...');
+        const kickBand = bandpassFilter(raw, sampleRate, 40, 100);
+
+        log('BPM: Building onset envelope...');
+        const HOP = 512;
+        const ENV_WIN = 1024;
+        const envelope = rmsEnvelope(kickBand, ENV_WIN, HOP);
+
+        log(`BPM: Envelope frames: ${envelope.length}`);
+
+        // Autocorrelation on envelope — finds the repeating beat period
+        log('BPM: Autocorrelation on envelope...');
+        const acResult = autocorrelTempo(envelope, sampleRate, HOP);
+        log(`BPM: Autocorr candidates: ${acResult.map(c => c.bpm.toFixed(2)).join(', ')}`);
+
+        // Spectral flux onset peaks → inter-beat histogram
+        log('BPM: Spectral flux peak histogram...');
+        const sfResult = spectralFluxTempo(kickBand, sampleRate);
+        log(`BPM: Flux candidates: ${sfResult.map(c => c.bpm.toFixed(2)).join(', ')}`);
+
+        // Merge, constrain to 128–160, pick winner
+        const all = [...acResult, ...sfResult];
+        const constrained = constrainTrance(all);
+        log(`BPM: Constrained candidates: ${constrained.map(c => `${c.bpm.toFixed(2)}(${c.score.toFixed(2)})`).join(', ')}`);
+
+        if (constrained.length === 0) {
+            log('BPM: Fallback to 138');
+            return { bpm: 138, confidence: 10, method: 'Fallback', candidates: [138] };
+        }
+
+        // Octave check — if top candidate's double/half is also in range, use energy evidence
+        const winner = harmonicVerify(constrained, envelope, sampleRate, HOP);
+        log(`BPM: Winner = ${winner.bpm}`);
+
+        return {
+            bpm: Math.round(winner.bpm),
+            confidence: Math.min(95, winner.score * 100),
+            method: 'Kick-band autocorr + flux histogram',
+            candidates: constrained.slice(0, 3).map(c => c.bpm)
+        };
+    }
+
+    // Simple IIR bandpass via two biquads in series
+    function bandpassFilter(data, sampleRate, freqLow, freqHigh) {
+        const out = highpassFilter(lowpassFilter(data, sampleRate, freqHigh), sampleRate, freqLow);
+        return out;
+    }
+
+    function lowpassFilter(data, sampleRate, cutoff) {
+        const RC = 1 / (2 * Math.PI * cutoff);
+        const dt = 1 / sampleRate;
+        const alpha = dt / (RC + dt);
+        const out = new Float32Array(data.length);
+        out[0] = data[0];
+        for (let i = 1; i < data.length; i++) {
+            out[i] = out[i - 1] + alpha * (data[i] - out[i - 1]);
+        }
+        return out;
+    }
+
+    function highpassFilter(data, sampleRate, cutoff) {
+        const RC = 1 / (2 * Math.PI * cutoff);
+        const dt = 1 / sampleRate;
+        const alpha = RC / (RC + dt);
+        const out = new Float32Array(data.length);
+        out[0] = data[0];
+        for (let i = 1; i < data.length; i++) {
+            out[i] = alpha * (out[i - 1] + data[i] - data[i - 1]);
+        }
+        return out;
+    }
+
+    function rmsEnvelope(data, winLen, hop) {
+        const frames = Math.floor((data.length - winLen) / hop);
+        const env = new Float64Array(frames);
+        for (let i = 0; i < frames; i++) {
+            let sum = 0;
+            const start = i * hop;
+            for (let j = 0; j < winLen; j++) {
+                sum += data[start + j] * data[start + j];
+            }
+            env[i] = Math.sqrt(sum / winLen);
+        }
+        return env;
+    }
+
+    function autocorrelTempo(envelope, sampleRate, hop) {
+        // Min/max lag in frames for 128–160 BPM
+        const minBPM = 128, maxBPM = 160;
+        const fps = sampleRate / hop;
+        const minLag = Math.floor(fps * 60 / maxBPM);
+        const maxLag = Math.ceil(fps * 60 / minBPM);
+        const N = envelope.length;
+
+        const acf = new Float64Array(maxLag + 1);
+        for (let lag = minLag; lag <= maxLag; lag++) {
+            let sum = 0;
+            const len = N - lag;
+            for (let i = 0; i < len; i++) {
+                sum += envelope[i] * envelope[i + lag];
+            }
+            acf[lag] = sum / len;
+        }
+
+        // Normalise by zero-lag
+        let zeroLag = 0;
+        for (let i = 0; i < N; i++) zeroLag += envelope[i] * envelope[i];
+        zeroLag /= N;
+        if (zeroLag > 0) {
+            for (let lag = minLag; lag <= maxLag; lag++) acf[lag] /= zeroLag;
+        }
+
+        // Find peaks in ACF
+        const peaks = [];
+        for (let lag = minLag + 1; lag < maxLag; lag++) {
+            if (acf[lag] > acf[lag - 1] && acf[lag] > acf[lag + 1] && acf[lag] > 0.1) {
+                peaks.push({ bpm: (fps * 60) / lag, score: acf[lag] });
+            }
+        }
+        peaks.sort((a, b) => b.score - a.score);
+        return peaks.slice(0, 5);
+    }
+
+    function spectralFluxTempo(data, sampleRate) {
+        const FFT_SIZE = 2048;
+        const HOP = 512;
+        const frames = Math.floor((data.length - FFT_SIZE) / HOP);
+        const flux = new Float64Array(frames);
+        let prevMag = null;
+
+        for (let i = 0; i < frames; i++) {
+            const start = i * HOP;
+            const seg = new Float64Array(FFT_SIZE);
+            for (let j = 0; j < FFT_SIZE; j++) {
+                seg[j] = data[start + j] * 0.5 * (1 - Math.cos(2 * Math.PI * j / FFT_SIZE));
+            }
+            const im = new Float64Array(FFT_SIZE);
+            fft(seg, im);
+            const mag = new Float64Array(FFT_SIZE / 2);
+            for (let j = 0; j < FFT_SIZE / 2; j++) {
+                mag[j] = Math.sqrt(seg[j] * seg[j] + im[j] * im[j]);
+            }
+            if (prevMag) {
+                let f = 0;
+                for (let j = 0; j < mag.length; j++) {
+                    const d = mag[j] - prevMag[j];
+                    if (d > 0) f += d;
+                }
+                flux[i] = f;
+            }
+            prevMag = mag;
+        }
+
+        // Peak-pick flux
+        const fps = sampleRate / HOP;
+        const minGap = Math.floor(fps * 60 / 160); // max 160 BPM
+        let mean = 0;
+        for (let i = 0; i < flux.length; i++) mean += flux[i];
+        mean /= flux.length;
+        let std = 0;
+        for (let i = 0; i < flux.length; i++) std += (flux[i] - mean) ** 2;
+        std = Math.sqrt(std / flux.length);
+        const thresh = mean + 0.5 * std;
+
+        const peakFrames = [];
+        for (let i = minGap; i < flux.length - minGap; i++) {
+            if (flux[i] > thresh) {
+                let ok = true;
+                for (let j = i - minGap; j <= i + minGap; j++) {
+                    if (j !== i && flux[j] >= flux[i]) { ok = false; break; }
+                }
+                if (ok) peakFrames.push(i);
+            }
+        }
+
+        if (peakFrames.length < 4) return [];
+
+        // IOI histogram
+        const minBPM = 128, maxBPM = 160;
+        const bins = 320; // 0.1 BPM resolution
+        const hist = new Float64Array(bins);
+
+        for (let i = 1; i < peakFrames.length; i++) {
+            const ioi = (peakFrames[i] - peakFrames[i - 1]) / fps; // seconds
+            const bpm = 60 / ioi;
+            // Also consider double/half
+            for (const b of [bpm, bpm / 2, bpm * 2]) {
+                if (b >= minBPM && b <= maxBPM) {
+                    const idx = Math.round((b - minBPM) / (maxBPM - minBPM) * (bins - 1));
+                    // Gaussian spread ±3 bins
+                    for (let k = -4; k <= 4; k++) {
+                        const ii = idx + k;
+                        if (ii >= 0 && ii < bins) {
+                            hist[ii] += Math.exp(-k * k / 4);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Find histogram peaks
+        const peaks = [];
+        for (let i = 2; i < bins - 2; i++) {
+            if (hist[i] > hist[i - 1] && hist[i] > hist[i + 1] && hist[i] > 0) {
+                const bpm = minBPM + (i / (bins - 1)) * (maxBPM - minBPM);
+                peaks.push({ bpm, score: hist[i] });
+            }
+        }
+        peaks.sort((a, b) => b.score - a.score);
+        return peaks.slice(0, 5);
+    }
+
+    function constrainTrance(candidates) {
+        // Keep only 128–160 BPM; also try doubling/halving outliers
+        const result = [];
+        for (const c of candidates) {
+            let b = c.bpm;
+            if (b >= 64 && b < 80) b *= 2;
+            else if (b >= 80 && b < 128) { /* could be half-time */ }
+            else if (b > 160 && b <= 320) b /= 2;
+
+            if (b >= 128 && b <= 160) {
+                result.push({ bpm: b, score: c.score });
+            }
+        }
+        // Merge duplicates within 0.5 BPM
+        const merged = [];
+        for (const c of result) {
+            const existing = merged.find(m => Math.abs(m.bpm - c.bpm) < 0.5);
+            if (existing) {
+                existing.score += c.score;
+                existing.bpm = (existing.bpm + c.bpm) / 2;
+            } else {
+                merged.push({ ...c });
+            }
+        }
+        merged.sort((a, b) => b.score - a.score);
+        return merged;
+    }
+
+    function harmonicVerify(candidates, envelope, sampleRate, hop) {
+        // For the top candidate, verify it's not an octave error
+        // by checking energy at beat-period vs. half-period
+        const fps = sampleRate / hop;
+        const top = candidates[0];
+        const period = fps * 60 / top.bpm;
+        const halfPeriod = period / 2;
+
+        const N = envelope.length;
+        let energyFull = 0, energyHalf = 0;
+        const checks = Math.min(20, Math.floor(N / period));
+        for (let k = 0; k < checks; k++) {
+            const idxFull = Math.round(k * period);
+            const idxHalf = Math.round(k * halfPeriod);
+            if (idxFull < N) energyFull += envelope[idxFull];
+            if (idxHalf < N) energyHalf += envelope[idxHalf];
+        }
+
+        // If half-period energy is substantially higher and half-BPM is in range
+        const halfBPM = top.bpm * 2;
+        if (energyHalf > energyFull * 1.5 && halfBPM >= 128 && halfBPM <= 160) {
+            log(`BPM: Harmonic correction: ${top.bpm.toFixed(1)} → ${halfBPM.toFixed(1)}`);
+            return { bpm: halfBPM, score: top.score };
+        }
+
+        return top;
+    }
+
+    // =====================================================================
+    // TRANCE-OPTIMISED KEY DETECTION
+    // Proper FFT chromagram, Krumhansl-Schmuckler, trance harmonic weights
+    // =====================================================================
+    async function detectKeyPrecision(buffer) {
+        const sampleRate = buffer.sampleRate;
+        const raw = buffer.getChannelData(0);
+
+        log('Key: Building precision chromagram...');
+        const chroma = buildChromagram(raw, sampleRate);
+        log(`Key: Chroma: ${chroma.map(v => v.toFixed(3)).join(' ')}`);
+
+        log('Key: Running Krumhansl-Schmuckler...');
+        const ksResults = runKS(chroma);
+        log(`Key: Top KS result: ${ksResults[0].key} r=${ksResults[0].r.toFixed(4)}`);
+        log(`Key: 2nd KS result: ${ksResults[1].key} r=${ksResults[1].r.toFixed(4)}`);
+
+        const top = ksResults[0];
+        const confidence = ((top.r + 1) / 2) * 100; // map -1..1 → 0..100
+
+        return {
+            key: top.key,
+            confidence: Math.min(95, confidence),
+            method: 'Blackman-Harris FFT Chromagram + K-S',
+            candidates: ksResults.slice(0, 3).map(r => r.key)
+        };
+    }
+
+    function buildChromagram(data, sampleRate) {
+        // Use multiple overlapping windows spread across the track
+        // FFT size chosen for ~2.7 Hz frequency resolution at 44.1 kHz
+        const FFT_SIZE = 16384;
+        const NUM_WINDOWS = 24; // more windows = better average
+        const chroma = new Float64Array(12);
+
+        const step = Math.max(1, Math.floor((data.length - FFT_SIZE) / NUM_WINDOWS));
+
+        for (let w = 0; w < NUM_WINDOWS; w++) {
+            const start = w * step;
+            if (start + FFT_SIZE > data.length) break;
+
+            // Blackman-Harris window
+            const re = new Float64Array(FFT_SIZE);
+            const im = new Float64Array(FFT_SIZE);
+            const a0 = 0.35875, a1 = 0.48829, a2 = 0.14128, a3 = 0.01168;
+            for (let i = 0; i < FFT_SIZE; i++) {
+                const w_i = a0
+                    - a1 * Math.cos(2 * Math.PI * i / (FFT_SIZE - 1))
+                    + a2 * Math.cos(4 * Math.PI * i / (FFT_SIZE - 1))
+                    - a3 * Math.cos(6 * Math.PI * i / (FFT_SIZE - 1));
+                re[i] = data[start + i] * w_i;
+            }
+
+            fft(re, im);
+
+            // Map FFT bins → pitch classes (C0-B8, octaves 0-8)
+            for (let bin = 1; bin < FFT_SIZE / 2; bin++) {
+                const freq = bin * sampleRate / FFT_SIZE;
+                if (freq < 27.5 || freq > 4186) continue; // A0 to C8
+
+                // MIDI note and pitch class
+                const midi = 12 * Math.log2(freq / 440) + 69;
+                const pc = Math.round(midi) % 12;
+                const octave = Math.floor(Math.round(midi) / 12) - 1;
+
+                const mag = Math.sqrt(re[bin] * re[bin] + im[bin] * im[bin]);
+
+                // Trance-specific octave weighting:
+                // Melody sits in C4-C6, bass in C1-C3
+                let octWeight = 1.0;
+                if (octave >= 1 && octave <= 3) octWeight = 1.5;  // bass/pad root
+                if (octave >= 4 && octave <= 6) octWeight = 2.0;  // trance lead/melody
+                if (octave === 0 || octave >= 7) octWeight = 0.3; // sub-bass/air
+
+                chroma[((pc % 12) + 12) % 12] += mag * octWeight;
+            }
+        }
+
+        // L2-normalise
+        let norm = 0;
+        for (let i = 0; i < 12; i++) norm += chroma[i] * chroma[i];
+        norm = Math.sqrt(norm);
+        if (norm > 0) {
+            for (let i = 0; i < 12; i++) chroma[i] /= norm;
+        }
+
+        return chroma;
+    }
+
+    function runKS(chroma) {
+        const results = [];
+        for (let tonic = 0; tonic < 12; tonic++) {
+            // Major
+            const rMaj = pearsonKS(chroma, KEY_PROFILES.major, tonic);
+            results.push({ key: `${NOTE_NAMES[tonic]} major`, r: rMaj, mode: 'major', tonic });
+
+            // Minor — prefer flat spelling for Eb, Ab, Bb
+            const flatTonic = [1, 3, 6, 8, 10].includes(tonic) ? NOTE_NAMES_FLAT[tonic] : NOTE_NAMES[tonic];
+            const rMin = pearsonKS(chroma, KEY_PROFILES.minor, tonic);
+            results.push({ key: `${flatTonic} minor`, r: rMin, mode: 'minor', tonic });
+        }
+        results.sort((a, b) => b.r - a.r);
+        return results;
+    }
+
+    function pearsonKS(obs, profile, shift) {
+        const n = 12;
+        const prof = [...profile.slice(shift), ...profile.slice(0, shift)];
+        let mx = 0, my = 0;
+        for (let i = 0; i < n; i++) { mx += obs[i]; my += prof[i]; }
+        mx /= n; my /= n;
+        let num = 0, dx2 = 0, dy2 = 0;
+        for (let i = 0; i < n; i++) {
+            const dx = obs[i] - mx, dy = prof[i] - my;
+            num += dx * dy;
+            dx2 += dx * dx;
+            dy2 += dy * dy;
+        }
+        const denom = Math.sqrt(dx2 * dy2);
+        return denom < 1e-10 ? 0 : num / denom;
+    }
+
+    function getCamelotCode(key) {
+        if (CAMELOT_WHEEL[key]) {
+            return CAMELOT_WHEEL[key];
+        }
+        
+        const normalized = key.replace('D#', 'Eb').replace('G#', 'Ab').replace('A#', 'Bb');
+        if (CAMELOT_WHEEL[normalized]) {
+            return CAMELOT_WHEEL[normalized];
+        }
+        
+        const [note, mode] = key.split(' ');
+        let noteIndex = NOTE_NAMES.indexOf(note);
+        if (noteIndex === -1) noteIndex = NOTE_NAMES_FLAT.indexOf(note);
+        if (noteIndex === -1) return '?';
+        
+        const offset = mode === 'major' ? 8 : 5;
+        const camelotNumber = ((noteIndex + offset) % 12) || 12;
+        const camelotLetter = mode === 'major' ? 'B' : 'A';
+        
+        return `${camelotNumber}${camelotLetter}`;
+    }
+
+    function displayResults(bpmResult, keyResult, duration) {
+        document.getElementById('bpmValue').textContent = bpmResult.bpm;
+        const candidatesText = bpmResult.candidates && bpmResult.candidates.length > 1 
+            ? `Candidates: ${bpmResult.candidates.map(b => Math.round(b)).join(', ')}`
+            : '';
+        document.getElementById('bpmCandidates').textContent = candidatesText;
+        document.getElementById('bpmConfidence').style.width = bpmResult.confidence + '%';
+        document.getElementById('bpmConfidenceText').textContent = `${Math.round(bpmResult.confidence)}% confidence`;
+        document.getElementById('bpmMethod').textContent = bpmResult.method;
+        
+        document.getElementById('keyValue').textContent = keyResult.key;
+        const keyCandidatesText = keyResult.candidates && keyResult.candidates.length > 1 && keyResult.candidates[0] !== keyResult.candidates[1]
+            ? `Runner-up: ${keyResult.candidates[1]}`
+            : '';
+        document.getElementById('keyCandidates').textContent = keyCandidatesText;
+        document.getElementById('keyConfidence').style.width = keyResult.confidence + '%';
+        document.getElementById('keyConfidenceText').textContent = `${Math.round(keyResult.confidence)}% confidence`;
+        document.getElementById('keyMethod').textContent = keyResult.method;
+        
+        const camelotCode = getCamelotCode(keyResult.key);
+        document.getElementById('positionCode').textContent = camelotCode;
+        document.getElementById('positionKey').textContent = keyResult.key;
+        document.getElementById('camelotDetail').textContent = `${camelotCode} (${keyResult.key})`;
+        document.getElementById('durationAnalyzed').textContent = `${duration.toFixed(1)}s`;
+        
+        const compatible = getCompatibleKeys(camelotCode);
+        const compatibleKeysDiv = document.getElementById('compatibleKeys');
+        compatibleKeysDiv.innerHTML = compatible.map((k, idx) => {
+            const keyName = CAMELOT_TO_KEY[k] || k;
+            const isPerfect = idx === 0;
+            return `<div class="key-tag ${isPerfect ? 'perfect' : ''}">${k} — ${keyName}</div>`;
+        }).join('');
+        
+        const debugInfo = document.getElementById('debugInfo');
+        debugInfo.textContent = debugLog.join('\n');
+        debugInfo.classList.add('active');
+        
+        drawCamelotWheel(camelotCode);
+        showResults();
+    }
+
+    function getCompatibleKeys(camelotCode) {
+        if (camelotCode === '?') return [];
+        
+        const num = parseInt(camelotCode);
+        const letter = camelotCode.slice(-1);
+        
+        const compatible = [];
+        compatible.push(num + (letter === 'A' ? 'B' : 'A'));
+        compatible.push((num === 12 ? 1 : num + 1) + letter);
+        compatible.push((num === 1 ? 12 : num - 1) + letter);
+        
+        return compatible;
+    }
+
+    function drawCamelotWheel(currentCode) {
+        const outerRing = document.getElementById('outerRing');
+        const innerRing = document.getElementById('innerRing');
+        
+        outerRing.innerHTML = '';
+        innerRing.innerHTML = '';
+        
+        const colors = [
+            '#ff006e', '#ff4d6d', '#ff7aa2', '#ffa6c1', '#ffccd5',
+            '#00f5ff', '#00d9ff', '#00bfff', '#0099ff', '#0066ff',
+            '#6a4c93', '#9c89b8'
+        ];
+        
+        for (let i = 0; i < 12; i++) {
+            const angle = (i * 30 - 90) * Math.PI / 180;
+            const xOuter = 150 + 110 * Math.cos(angle);
+            const yOuter = 150 + 110 * Math.sin(angle);
+            const xInner = 150 + 70 * Math.cos(angle);
+            const yInner = 150 + 70 * Math.sin(angle);
+            
+            const codeB = (i === 0 ? 12 : i) + 'B';
+            const codeA = (i === 0 ? 12 : i) + 'A';
+            
+            const circleB = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circleB.setAttribute('cx', xOuter);
+            circleB.setAttribute('cy', yOuter);
+            circleB.setAttribute('r', codeB === currentCode ? 24 : 16);
+            circleB.setAttribute('fill', colors[i]);
+            circleB.setAttribute('opacity', codeB === currentCode ? 1 : 0.5);
+            circleB.setAttribute('stroke', codeB === currentCode ? 'var(--accent-primary)' : 'none');
+            circleB.setAttribute('stroke-width', codeB === currentCode ? 3 : 0);
+            if (codeB === currentCode) {
+                circleB.style.filter = 'drop-shadow(0 0 10px var(--accent-primary))';
+            }
+            outerRing.appendChild(circleB);
+            
+            const circleA = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circleA.setAttribute('cx', xInner);
+            circleA.setAttribute('cy', yInner);
+            circleA.setAttribute('r', codeA === currentCode ? 22 : 14);
+            circleA.setAttribute('fill', colors[i]);
+            circleA.setAttribute('opacity', codeA === currentCode ? 1 : 0.4);
+            circleA.setAttribute('stroke', codeA === currentCode ? 'var(--accent-primary)' : 'none');
+            circleA.setAttribute('stroke-width', codeA === currentCode ? 3 : 0);
+            if (codeA === currentCode) {
+                circleA.style.filter = 'drop-shadow(0 0 10px var(--accent-primary))';
+            }
+            innerRing.appendChild(circleA);
+        }
+    }
+
+    function showAnalyzing() {
+        document.getElementById('analyzing').classList.add('active');
+    }
+
+    function hideAnalyzing() {
+        document.getElementById('analyzing').classList.remove('active');
+    }
+
+    function showResults() {
+        document.getElementById('results').classList.add('active');
+        document.getElementById('resultsCard').classList.add('active');
+    }
+
+    function hideResults() {
+        document.getElementById('results').classList.remove('active');
+        document.getElementById('resultsCard').classList.remove('active');
+    }
+
+    function showWarning(message) {
+        // Re-use error div with a different colour via inline style
+        const errorDiv = document.getElementById('error');
+        errorDiv.textContent = '⚠ ' + message;
+        errorDiv.style.background = 'rgba(255, 165, 0, 0.1)';
+        errorDiv.style.borderColor = 'rgba(255, 165, 0, 0.4)';
+        errorDiv.style.color = '#ffb347';
+        errorDiv.classList.add('active');
+    }
+
+    function showError(message) {
+        const errorDiv = document.getElementById('error');
+        errorDiv.textContent = message;
+        errorDiv.classList.add('active');
+    }
+
+    function hideError() {
+        const errorDiv = document.getElementById('error');
+        errorDiv.classList.remove('active');
+        errorDiv.style.background = '';
+        errorDiv.style.borderColor = '';
+        errorDiv.style.color = '';
+    }
+
+    drawCamelotWheel('8B');
+</script>
+```
+
+</body>
+</html>
